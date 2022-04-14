@@ -29,9 +29,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', 'localhost:3000']
 
 
 # Application definition
@@ -183,9 +183,9 @@ REST_FRAMEWORK = {
 CORS_ORIGIN_ALLOW_ALL = False
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = [
-    env('CORS_WHITELIST'),
+    env('CORS_WHITELIST1'), env('CORS_WHITELIST2'),
 ]
 # If this is used, then not need to use `CORS_ORIGIN_ALLOW_ALL = True`
 CORS_ORIGIN_REGEX_WHITELIST = [
-    env('CORS_WHITELIST'),
+    env('CORS_WHITELIST1'), env('CORS_WHITELIST2'),
 ]
