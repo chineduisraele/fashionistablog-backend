@@ -29,10 +29,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = [env('ALLOWED_HOSTS1'), env(
-    'ALLOWED_HOSTS2'), env('ALLOWED_HOSTS3')]
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -93,12 +92,8 @@ WSGI_APPLICATION = 'app.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME'),
-        'HOST': env('DB_HOST'),
-        'PORT': env('DB_PORT'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD')
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -174,7 +169,7 @@ REST_FRAMEWORK = {
 
     # Paginations
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 12
+    'PAGE_SIZE': 1
 
     # 'DEFAULT_PERMISSIOM_CLASSES': ['rest_framework.permissions.IsAuthenticated']
 }
