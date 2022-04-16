@@ -203,7 +203,6 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
                         'search'))
 
                     self.queryset = set1 | set2 | set3
-
                 # use this when i change to mysql or postgre
                 # self.queryset = (set1 | set2 | set3).distinct(
                 #     'id').order_by('-id')
