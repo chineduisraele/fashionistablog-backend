@@ -66,7 +66,7 @@ class Post(models.Model):
     # def filter(cls, category):
     #     return Post.objects.filter(category=category)
 
-    # mata
+    # meta
 
     class Meta:
         ordering = ["-id"]

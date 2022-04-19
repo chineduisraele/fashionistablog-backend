@@ -169,7 +169,7 @@ REST_FRAMEWORK = {
 
     # Paginations
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 1
+    'PAGE_SIZE': 12
 
     # 'DEFAULT_PERMISSIOM_CLASSES': ['rest_framework.permissions.IsAuthenticated']
 }
