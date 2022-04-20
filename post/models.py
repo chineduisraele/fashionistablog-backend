@@ -1,18 +1,19 @@
 from enum import unique
 from django.db import models
 from django.contrib.auth.models import User
-from app.settings import MEDIA_ROOT
+
 
 # Create your models here.
 
 
 class Post(models.Model):
     # upload paths
+	#made this an absolute url
     def get_image_upload_path(self, filename):
-        return MEDIA_ROOT / 'post_images' / filename
+        return 'post_images' / filename
 
     def get_thumbnail_upload_path(self, filename):
-        return MEDIA_ROOT / 'post_thumbnsils' / filename
+        return  'post_thumbnails' / filename
 
     # category choices
     CATEGORIES = (("design", 'Design'), ("fashion", 'Fashion'),
