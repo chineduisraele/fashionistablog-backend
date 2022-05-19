@@ -1,6 +1,5 @@
-from datetime import date, datetime
-from django.db.models import Count
 from django.http import JsonResponse
+from django.db.models import Count, Q
 
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
@@ -9,6 +8,7 @@ from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import AllowAny
 
+from datetime import date
 from .models import Post, Comment, NewsFeed
 from .serializers import PostSerializer, PostSerializerMinified, CommentSerializer, PostSerializerMostViewed, PostSerializerPopular, NewsFeedSerializer
 
@@ -21,8 +21,7 @@ class SmallResulsSetPagination(PageNumberPagination):
 
 class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
     serializer_class = PostSerializerMinified
-    queryset = Post.objects.all().annotate(
-        total_comments=Count("comments")).order_by("-id")
+    queryset = Post.objects.all()
     permission_classes = [AllowAny]
 
 # posts filter
@@ -31,187 +30,187 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
     def filter(self, request, *args, **kwargs):
         self.serializer_class = PostSerializerMinified
 
-        if request.method == "GET":
-            # related posts
-            if request.query_params.get('relatedcategory'):
-                # custom pagination
-                self.pagination_class = SmallResulsSetPagination
+        # related posts
+        if request.query_params.get('relatedcategory'):
+            # custom pagination
+            self.pagination_class = SmallResulsSetPagination
 
+            self.queryset = self.queryset.filter(
+                category__iexact=request.query_params.get('relatedcategory')).exclude(id=request.query_params.get('id'))
+
+            tagslist = request.query_params.get('relatedtag').split(",")
+
+            self.queryset = self.queryset.filter(Q(tags__icontains=tagslist[0]) | Q(
+                tags__icontains=tagslist[1]) | Q(tags__icontains=tagslist[2]))
+            # add distinct() method
+
+        # category
+        elif request.query_params.get('category'):
+            category = request.query_params.get('category')
+            try:
+                year = int(category)
                 self.queryset = self.queryset.filter(
-                    category__iexact=request.query_params.get('relatedcategory')).exclude(id=request.query_params.get('id'))
+                    date__year=year)
+            except:
+                self.queryset = self.queryset.filter(
+                    category__iexact=category)
 
-                tagslist = request.query_params.get('relatedtag').split(",")
+        # featured
+        elif request.query_params.get('featured'):
 
-                self.queryset = self.queryset.filter(tags__icontains=tagslist[0]) | self.queryset.filter(
-                    tags__icontains=tagslist[1]) | self.queryset.filter(tags__icontains=tagslist[2])
-                # add distinct() method
+            category = request.query_params.get('featured').lower()
 
-            # category
-            elif request.query_params.get('category'):
-                category = request.query_params.get('category')
-                try:
-                    year = int(category)
-                    self.queryset = self.queryset.filter(
-                        date__year=year)
-                except:
-                    self.queryset = self.queryset.filter(
-                        category__iexact=category)
+            try:
+                year = int(category)
+                self.queryset = self.queryset.filter(
+                    featured=True).filter(
+                    date__year=year)
+            except:
+                self.queryset = self.queryset.filter(
+                    featured=True) if category == "all" else self.queryset.filter(
+                    featured=True).filter(category=category)
+            # custom pagination
+            self.pagination_class = SmallResulsSetPagination
 
-            # featured
-            elif request.query_params.get('featured'):
+        # popular
+        elif request.query_params.get('popular'):
+            category = request.query_params.get('popular').lower()
+            id = request.query_params.get('id')
+            self.queryset = self.queryset.annotate(
+                total_comments=Count('comments'))
 
-                category = request.query_params.get('featured').lower()
+            today = date.today()
 
-                try:
-                    year = int(category)
-                    self.queryset = self.queryset.filter(
-                        featured=True).filter(
-                        date__year=year)
-                except:
-                    self.queryset = self.queryset.filter(
-                        featured=True) if category == "all" else self.queryset.filter(
-                        featured=True).filter(category=category)
-                # custom pagination
-                self.pagination_class = SmallResulsSetPagination
+            try:
+                year = int(category)
+                self.queryset = self.queryset.filter(
+                    date__year=year).order_by("-total_comments")
+            except:
+                self.queryset = self.queryset.filter(
+                    date__year=today.year).order_by("-total_comments") if category == "all" else self.queryset.filter(category=category).filter(
+                    date__year=today.year).order_by("-total_comments")
 
-            # popular
-            elif request.query_params.get('popular'):
-                category = request.query_params.get('popular').lower()
-                id = request.query_params.get('id')
+                if id:
+                    self.queryset = self.queryset.exclude(pk=id)
 
-                today = date.today()
+            # custom pagination and serializer
+            self.serializer_class = PostSerializerPopular
+            self.pagination_class = SmallResulsSetPagination
 
-                try:
-                    year = int(category)
-                    self.queryset = self.queryset.filter(
-                        date__year=year).order_by("-total_comments")
-                except:
-                    self.queryset = self.queryset.filter(
-                        date__year=today.year).order_by("-total_comments") if category == "all" else self.queryset.filter(category=category).filter(
-                        date__year=today.year).order_by("-total_comments")
+        # most viewed
+        elif request.query_params.get('most_viewed'):
+            category = request.query_params.get('most_viewed').lower()
 
-                    if id:
-                        self.queryset = self.queryset.exclude(pk=id)
+            today = date.today()
 
-                # custom pagination and serializer
-                self.serializer_class = PostSerializerPopular
-                self.pagination_class = SmallResulsSetPagination
+            try:
+                year = int(category)
+                self.queryset = self.queryset.filter(
+                    date__year=year).order_by("-views")
+            except:
+                self.queryset = self.queryset.filter(
+                    date__year=today.year).order_by("-views") if category == "all" else self.queryset.filter(category=category).filter(
+                    date__year=today.year).order_by("-views")
 
-            # most viewed
-            elif request.query_params.get('most_viewed'):
-                category = request.query_params.get('most_viewed').lower()
+            self.serializer_class = PostSerializerMostViewed
 
-                today = date.today()
+        # category counts
+        elif request.query_params.get('category_count'):
+            query_set = self.queryset.values("category")
 
-                try:
-                    year = int(category)
-                    self.queryset = self.queryset.filter(
-                        date__year=year).order_by("-views")
-                except:
-                    self.queryset = self.queryset.filter(
-                        date__year=today.year).order_by("-views") if category == "all" else self.queryset.filter(category=category).filter(
-                        date__year=today.year).order_by("-views")
+            self.queryset = [
+                {
+                    "text": "design",
+                    "count": query_set.filter(
+                        category='design'
+                    ).count()
+                },
+                {
+                    "text": "fashion",
+                    "count": query_set.filter(
+                        category='fashion'
+                    ).count()
+                },
 
-                self.serializer_class = PostSerializerMostViewed
+                {
+                    "text": "lifestyle",
+                    "count": query_set.filter(
+                        category='lifestyle'
+                    ).count()
+                },
+                {
+                    "text": "talks",
+                    "count": query_set.filter(
+                        category='talks'
+                    ).count()
+                }
+            ]
 
-            # category counts
-            elif request.query_params.get('category_count'):
-                query_set = self.queryset.values("category")
+            return JsonResponse(self.queryset, safe=False)
 
-                self.queryset = [
-                    {
-                        "text": "design",
-                        "count": query_set.filter(
-                            category='design'
-                        ).count()
-                    },
-                    {
-                        "text": "fashion",
-                        "count": query_set.filter(
-                            category='fashion'
-                        ).count()
-                    },
+        # archives_count
+        elif request.query_params.get('archives_count'):
+            currentyear = date.today().year
 
-                    {
-                        "text": "lifestyle",
-                        "count": query_set.filter(
-                            category='lifestyle'
-                        ).count()
-                    },
-                    {
-                        "text": "talks",
-                        "count": query_set.filter(
-                            category='talks'
-                        ).count()
-                    }
-                ]
+            query_set = self.queryset.values("date")
+            self.queryset = [
+                {
+                    "text": currentyear,
+                    "count": query_set.filter(
+                        date__year=currentyear
+                    ).count()
+                },
+                {
+                    "text": currentyear-1,
+                    "count": query_set.filter(
+                        date__year=currentyear-1
+                    ).count()
+                },
+                {
+                    "text": currentyear-2,
+                    "count": query_set.filter(
+                        date__year=currentyear-2
+                    ).count()
+                },
+                {
+                    "text": currentyear-3,
+                    "count": query_set.filter(
+                        date__year=currentyear-3
+                    ).count()
+                },
+                {
+                    "text": currentyear-4,
+                    "count": query_set.filter(
+                        date__year=currentyear-4
+                    ).count()
+                }
+            ]
 
-                return JsonResponse(self.queryset, safe=False)
+            return JsonResponse(self.queryset, safe=False)
 
-            # archives_count
-            elif request.query_params.get('archives_count'):
-                currentyear = date.today().year
+        # search
+        elif request.query_params.get('search'):
+            if (request.query_params.get('tagonly')):
+                self.queryset = self.queryset.filter(tags__icontains=request.query_params.get(
+                    'search'))
 
-                query_set = self.queryset.values("date")
-                self.queryset = [
-                    {
-                        "text": currentyear,
-                        "count": query_set.filter(
-                            date__year=currentyear
-                        ).count()
-                    },
-                    {
-                        "text": currentyear-1,
-                        "count": query_set.filter(
-                            date__year=currentyear-1
-                        ).count()
-                    },
-                    {
-                        "text": currentyear-2,
-                        "count": query_set.filter(
-                            date__year=currentyear-2
-                        ).count()
-                    },
-                    {
-                        "text": currentyear-3,
-                        "count": query_set.filter(
-                            date__year=currentyear-3
-                        ).count()
-                    },
-                    {
-                        "text": currentyear-4,
-                        "count": query_set.filter(
-                            date__year=currentyear-4
-                        ).count()
-                    }
-                ]
+            else:
+                set1 = self.queryset.filter(title__icontains=request.query_params.get(
+                    'search'))
+                set2 = self.queryset.filter(
+                    category__icontains=request.query_params.get('search'))
+                set3 = self.queryset.filter(tags__icontains=request.query_params.get(
+                    'search'))
 
-                return JsonResponse(self.queryset, safe=False)
+                self.queryset = set1 | set2 | set3
+            # use this when i change to mysql or postgre
+            # self.queryset = (set1 | set2 | set3).distinct(
+            #     'id').order_by('-id')
 
-            # search
-            elif request.query_params.get('search'):
-                if (request.query_params.get('tagonly')):
-                    self.queryset = self.queryset.filter(tags__icontains=request.query_params.get(
-                        'search'))
-
-                else:
-                    set1 = self.queryset.filter(title__icontains=request.query_params.get(
-                        'search'))
-                    set2 = self.queryset.filter(
-                        category__icontains=request.query_params.get('search'))
-                    set3 = self.queryset.filter(tags__icontains=request.query_params.get(
-                        'search'))
-
-                    self.queryset = set1 | set2 | set3
-                # use this when i change to mysql or postgre
-                # self.queryset = (set1 | set2 | set3).distinct(
-                #     'id').order_by('-id')
-
-            return self.list(request, *args, **kwargs)
+        return self.list(request, *args, **kwargs)
 
 
 # single post details
-
 
     @ action(["get"], detail=False)
     def singlepost(self, request, *args, **kwargs):
@@ -240,10 +239,6 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
 
             return self.list(request, *args, **kwargs)
 
-        # if request.method == "GET":
-        #     self.queryset = Comment.objects.filter(
-        #         post=request.query_params.get("id"))
-        #     return self.list(request, *args, **kwargs)
 
 # subscribe to news feed
 

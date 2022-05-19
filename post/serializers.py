@@ -1,4 +1,4 @@
-from rest_framework.serializers import SerializerMethodField, ModelSerializer, ALL_FIELDS, IntegerField, Serializer
+from rest_framework.serializers import SerializerMethodField, ModelSerializer
 from .models import Post, Paragraph, Comment, NewsFeed
 
 
@@ -16,8 +16,6 @@ class CommentSerializer(ModelSerializer):
 
 # single post serializer
 class PostSerializer(ModelSerializer):
-    # serializer field
-    total_comments = IntegerField()
 
     # method field
     author = SerializerMethodField()

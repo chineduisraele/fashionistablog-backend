@@ -15,11 +15,13 @@ class CommentInline(admin.TabularInline):
 
 
 class PostAdmin(admin.ModelAdmin):
+    list_display = ('title', 'author', 'views',
+                    'category', 'total_comments')
+
     inlines = [ParagraphInline, CommentInline]
 
 
 # Register your models here.
-# register newsfeed
 admin.site.register(Post, PostAdmin)
 
 # register newsfeed

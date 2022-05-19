@@ -1,12 +1,18 @@
-from enum import unique
 from django.db import models
+from django.contrib import admin
 from django.contrib.auth.models import User
 
 # Create your models here.
 
 
 class Post(models.Model):
+
+    @admin.display(
+        description='total_comments')
+    def get_total_comments(self):
+        return len(self.comments.all())
     # upload paths
+
     def get_image_upload_path(self, filename):
         return f'post_images/{filename}'
 
@@ -16,6 +22,8 @@ class Post(models.Model):
     # category choices
     CATEGORIES = (("design", 'Design'), ("fashion", 'Fashion'),
                   ("lifestyle", 'lifestyle'), ("talks", 'Talks'))
+
+    total_comments = get_total_comments
 
     # banner image
     image = models.ImageField(
@@ -59,12 +67,6 @@ class Post(models.Model):
                 name=name,
                 comment=comment).save()
 
-    # class methods
-
-    # @classmethod
-    # def filter(cls, category):
-    #     return Post.objects.filter(category=category)
-
     # meta
 
     class Meta:
@@ -96,7 +98,6 @@ class Comment(models.Model):
     date = models.DateTimeField(auto_now_add=True)
 
     # meta
-    # mata
     class Meta:
         ordering = ["-id"]
 
