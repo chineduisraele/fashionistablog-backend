@@ -6,7 +6,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from app.settings import EMAIL_HOST_USER
 
-from .models import Post, NewsFeed, Paragraph
+from .models import Post, NewsFeed
 
 # send mail
 
@@ -28,7 +28,6 @@ def send_new_subscriber_email(sender, instance, created, **kwargs):
     if created:
         context = {
             'name': instance.name,
-
         }
 
         sendMail(EMAIL_HOST_USER, [instance.email],

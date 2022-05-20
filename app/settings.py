@@ -29,9 +29,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'fashionistablog.herokuapp.com']
 
 
 # Application definition
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # 3rd Party
+    'storages',
     'corsheaders',
     'rest_framework',
 
@@ -90,12 +91,28 @@ WSGI_APPLICATION = 'app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+
+if DEBUG:
+    try:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+    except:
+        pass
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': env('DB_NAME'),
+            'HOST': env('DB_HOST'),
+            'PORT': env('DB_PORT'),
+            'USER': env('DB_USER'),
+            'PASSWORD': env('DB_PASSWORD')
+        }
     }
-}
 
 
 # Password validation
@@ -133,12 +150,24 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIR = BASE_DIR/'staticfiles'
-STATIC_ROOT = BASE_DIR/'staticfiles'
+STATICFILES_DIR = [BASE_DIR/'staticfiles/']
+STATIC_ROOT = BASE_DIR/'staticfiles/'
 
-# media
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR/'media'
+# Media files (Images)
+if DEBUG:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
+
+else:
+
+    # Django storages
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+    # AWS
+    AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
+    AWS_LOCATION = "media"
 
 
 # Default primary key field type

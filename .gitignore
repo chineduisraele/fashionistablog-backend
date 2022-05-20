@@ -3,4 +3,5 @@ db.sqlite3
 # folders
 /media
 /post/migrations
+/staticfiles
 
