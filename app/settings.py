@@ -171,7 +171,7 @@ else:
 
     AWS_QUERYSTRING_AUTH = False
     AWS_S3_OBJECT_PARAMETERS = {
-        "CacheControl": "max-age=31000000"
+        'CacheControl': 'max-age=31000000',
     }
 
 
