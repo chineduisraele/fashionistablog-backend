@@ -5,7 +5,7 @@ from .models import Post, Paragraph, Comment, NewsFeed
 class ParagraphSerializer(ModelSerializer):
     class Meta:
         model = Paragraph
-        fields = ["id", "image", "text"]
+        fields = ["image", "text"]
 
 
 class CommentSerializer(ModelSerializer):
@@ -42,25 +42,24 @@ class PostSerializerMinified(PostSerializer):
 
     class Meta:
         model = Post
-        fields = ["id", "thumbnail", "category", "featured", "title",
+        fields = ["id", "image", "category", "featured", "title",
                   "date", "total_comments", "views", 'short_text']
 
         read_only_fields = ['id', 'date']
 
+
 # popular posts serializer
-
-
 class PostSerializerMostViewed(PostSerializerMinified):
     class Meta:
         model = Post
-        fields = ["id", "thumbnail", "category", "title",
+        fields = ["id", "image", "category", "title",
                   "date", "total_comments", "views"]
 
 
 class PostSerializerPopular(ModelSerializer):
     class Meta:
         model = Post
-        fields = ["id", "thumbnail", "title", "category", "date"]
+        fields = ["id", "image", "title", "category", "date", ]
 
 
 # Newsfeed

@@ -1,5 +1,5 @@
-from django.http import JsonResponse
 from django.db.models import Count, Q
+from rest_framework.views import Response
 
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
@@ -9,13 +9,15 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import AllowAny
 
 from datetime import date
-from .models import Post, Comment, NewsFeed
+
+from app.settings import DEBUG
+from .models import Paragraph, Post, Comment, NewsFeed
 from .serializers import PostSerializer, PostSerializerMinified, CommentSerializer, PostSerializerMostViewed, PostSerializerPopular, NewsFeedSerializer
 
 # Create your views here.
 
 
-class SmallResulsSetPagination(PageNumberPagination):
+class SmallResultSetPagination(PageNumberPagination):
     page_size = 6
 
 
@@ -31,18 +33,19 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
         self.serializer_class = PostSerializerMinified
 
         # related posts
-        if request.query_params.get('relatedcategory'):
+        if (related_category := request.query_params.get('relatedcategory')):
             # custom pagination
-            self.pagination_class = SmallResulsSetPagination
-
-            self.queryset = self.queryset.filter(
-                category__iexact=request.query_params.get('relatedcategory')).exclude(id=request.query_params.get('id'))
+            self.pagination_class = SmallResultSetPagination
 
             tagslist = request.query_params.get('relatedtag').split(",")
 
+            self.queryset = self.queryset.filter(
+                category__iexact=related_category).exclude(id=request.query_params.get('id'))
+
             self.queryset = self.queryset.filter(Q(tags__icontains=tagslist[0]) | Q(
                 tags__icontains=tagslist[1]) | Q(tags__icontains=tagslist[2]))
-            # add distinct() method
+            if not DEBUG:
+                self.queryset = self.queryset.distinct("id").orderby("-1d")
 
         # category
         elif request.query_params.get('category'):
@@ -57,29 +60,31 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
 
         # featured
         elif request.query_params.get('featured'):
-
-            category = request.query_params.get('featured').lower()
+            # custom pagination
+            self.pagination_class = SmallResultSetPagination
+            category = request.query_params.get('featured')
 
             try:
                 year = int(category)
                 self.queryset = self.queryset.filter(
-                    featured=True).filter(
-                    date__year=year)
+                    featured=True, date__year=year)
             except:
                 self.queryset = self.queryset.filter(
                     featured=True) if category == "all" else self.queryset.filter(
-                    featured=True).filter(category=category)
-            # custom pagination
-            self.pagination_class = SmallResulsSetPagination
+                    featured=True, category__iexact=category)
 
         # popular
         elif request.query_params.get('popular'):
-            category = request.query_params.get('popular').lower()
+            # custom pagination and serializer
+            self.serializer_class = PostSerializerPopular
+            self.pagination_class = SmallResultSetPagination
+
+            category = request.query_params.get('popular')
             id = request.query_params.get('id')
+            today = date.today()
+
             self.queryset = self.queryset.annotate(
                 total_comments=Count('comments'))
-
-            today = date.today()
 
             try:
                 year = int(category)
@@ -87,20 +92,15 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
                     date__year=year).order_by("-total_comments")
             except:
                 self.queryset = self.queryset.filter(
-                    date__year=today.year).order_by("-total_comments") if category == "all" else self.queryset.filter(category=category).filter(
-                    date__year=today.year).order_by("-total_comments")
+                    date__year=today.year).order_by("-total_comments") if category == "all" else self.queryset.filter(category__iexact=category, date__year=today.year).order_by("-total_comments")
 
                 if id:
                     self.queryset = self.queryset.exclude(pk=id)
 
-            # custom pagination and serializer
-            self.serializer_class = PostSerializerPopular
-            self.pagination_class = SmallResulsSetPagination
-
         # most viewed
         elif request.query_params.get('most_viewed'):
-            category = request.query_params.get('most_viewed').lower()
-
+            self.serializer_class = PostSerializerMostViewed
+            category = request.query_params.get('most_viewed')
             today = date.today()
 
             try:
@@ -109,10 +109,8 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
                     date__year=year).order_by("-views")
             except:
                 self.queryset = self.queryset.filter(
-                    date__year=today.year).order_by("-views") if category == "all" else self.queryset.filter(category=category).filter(
+                    date__year=today.year).order_by("-views") if category == "all" else self.queryset.filter(category__iexact=category).filter(
                     date__year=today.year).order_by("-views")
-
-            self.serializer_class = PostSerializerMostViewed
 
         # category counts
         elif request.query_params.get('category_count'):
@@ -146,7 +144,7 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
                 }
             ]
 
-            return JsonResponse(self.queryset, safe=False)
+            return Response(self.queryset, status=200)
 
         # archives_count
         elif request.query_params.get('archives_count'):
@@ -185,8 +183,7 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
                     ).count()
                 }
             ]
-
-            return JsonResponse(self.queryset, safe=False)
+            return Response(self.queryset, status=200)
 
         # search
         elif request.query_params.get('search'):
@@ -195,17 +192,16 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
                     'search'))
 
             else:
-                set1 = self.queryset.filter(title__icontains=request.query_params.get(
-                    'search'))
-                set2 = self.queryset.filter(
-                    category__icontains=request.query_params.get('search'))
-                set3 = self.queryset.filter(tags__icontains=request.query_params.get(
-                    'search'))
+                self.queryset = self.queryset.filter(Q(title__icontains=request.query_params.get(
+                    'search')) | Q(category__icontains=request.query_params.get('search')) | Q(tags__icontains=request.query_params.get(
+                        'search')))
 
-                self.queryset = set1 | set2 | set3
-            # use this when i change to mysql or postgre
-            # self.queryset = (set1 | set2 | set3).distinct(
-            #     'id').order_by('-id')
+                if not DEBUG:
+                    # print(Paragraph.objects.filter(
+                    #     text__icontains=get('search')).distinct("id"))
+                    # does not work for sqllite
+                    self.queryset = self.queryset.distinct(
+                        'id').order_by('-id')
 
         return self.list(request, *args, **kwargs)
 
@@ -216,12 +212,11 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
     def singlepost(self, request, *args, **kwargs):
 
         self.serializer_class = PostSerializer
-        self.queryset = self.queryset.filter(
-            pk=request.query_params.get('id'))
 
         if request.method == "GET":
-            (get_object_or_404(Post, pk=request.query_params.get(
-                'id'))).update_views()
+            self.queryset = self.queryset.filter(
+                pk=request.query_params.get('id'), category=request.query_params.get('category'))
+            self.queryset[0].update_views()
 
             return self.list(request, *args, **kwargs)
 
@@ -231,11 +226,13 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
         self.serializer_class = CommentSerializer
 
         if request.method == "POST":
-            self.queryset = Comment.objects.filter(
-                post=request.data["id"])
-
+            # create comment
             (get_object_or_404(Post, pk=request.data["id"])).create_comment(
                 request.data["name"], request.data["comment"])
+
+            # return comments
+            self.queryset = Comment.objects.filter(
+                post=request.data["id"])
 
             return self.list(request, *args, **kwargs)
 

@@ -8,9 +8,8 @@ from app.settings import EMAIL_HOST_USER
 
 from .models import Post, NewsFeed
 
+
 # send mail
-
-
 def sendMail(sender, receiver, subject, template, context=None):
     html_message = render_to_string(
         template, context)
@@ -21,7 +20,6 @@ def sendMail(sender, receiver, subject, template, context=None):
               receiver, html_message=html_message)
 
 
-# signals
 # new subscriber notif
 @receiver(post_save, sender=NewsFeed)
 def send_new_subscriber_email(sender, instance, created, **kwargs):
@@ -36,11 +34,11 @@ def send_new_subscriber_email(sender, instance, created, **kwargs):
 
 
 # new post notif
-@receiver(post_save, sender=Post)
-def send_newsfeed_email(sender, instance, created, **kwargs):
-    if created:
-        # print(Paragraph.objects.filter(post=instance)[0])
-        pass
+# @receiver(post_save, sender=Post)
+# def send_newsfeed_email(sender, instance, created, **kwargs):
+#     if created:
+#         # print(Paragraph.objects.filter(post=instance)[0])
+#         pass
     # subject = f'Fashionista  - Added a new post in {instance.get_category_display()}'
     # context = {
     #     'title': instance.title,

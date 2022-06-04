@@ -16,20 +16,15 @@ class Post(models.Model):
     def get_image_upload_path(self, filename):
         return f'post_images/{filename}'
 
-    def get_thumbnail_upload_path(self, filename):
-        return f'post_thumbnails/{filename}'
-
     # category choices
     CATEGORIES = (("design", 'Design'), ("fashion", 'Fashion'),
-                  ("lifestyle", 'lifestyle'), ("talks", 'Talks'))
+                  ("lifestyle", 'Lifestyle'), ("talks", 'Talks'))
 
     total_comments = get_total_comments
 
     # banner image
     image = models.ImageField(
         upload_to=get_image_upload_path)
-    # thumbnail
-    thumbnail = models.ImageField(upload_to=get_thumbnail_upload_path)
 
     category = models.CharField(choices=CATEGORIES, max_length=25)
     featured = models.BooleanField(default=False)
@@ -54,7 +49,7 @@ class Post(models.Model):
         return Paragraph.objects.filter(post=self)
 
     def get_short_text(self):
-        return (Paragraph.objects.filter(post=self)[0]).get_short_text()
+        return (Paragraph.objects.filter(post=self))[0].get_short_text()
 
     # instance method actions
 

@@ -191,7 +191,6 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 
 
 # 3rd party Settings
-# 3rd party
 # REST_FRAMEWORK
 REST_FRAMEWORK = {
     # allow read-only access for unauthenticated users
@@ -204,8 +203,6 @@ REST_FRAMEWORK = {
     # Paginations
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 12
-
-    # 'DEFAULT_PERMISSIOM_CLASSES': ['rest_framework.permissions.IsAuthenticated']
 }
 
 
