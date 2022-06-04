@@ -1,7 +1,6 @@
 from django.db.models import Count, Q
 from rest_framework.views import Response
 
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import ListModelMixin, CreateModelMixin
@@ -11,14 +10,10 @@ from rest_framework.permissions import AllowAny
 from datetime import date
 
 from app.settings import DEBUG
-from .models import Paragraph, Post, Comment, NewsFeed
+from .models import Post, Comment, NewsFeed
 from .serializers import PostSerializer, PostSerializerMinified, CommentSerializer, PostSerializerMostViewed, PostSerializerPopular, NewsFeedSerializer
 
 # Create your views here.
-
-
-class SmallResultSetPagination(PageNumberPagination):
-    page_size = 6
 
 
 class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
@@ -34,18 +29,18 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
 
         # related posts
         if (related_category := request.query_params.get('relatedcategory')):
-            # custom pagination
-            self.pagination_class = SmallResultSetPagination
 
             tagslist = request.query_params.get('relatedtag').split(",")
 
             self.queryset = self.queryset.filter(
                 category__iexact=related_category).exclude(id=request.query_params.get('id'))
+            print(tagslist, self.queryset)
 
             self.queryset = self.queryset.filter(Q(tags__icontains=tagslist[0]) | Q(
                 tags__icontains=tagslist[1]) | Q(tags__icontains=tagslist[2]))
-            if not DEBUG:
-                self.queryset = self.queryset.distinct("id").orderby("-1d")
+            print(tagslist, self.queryset)
+            # if not DEBUG and self.queryset:
+            #     self.queryset = self.queryset.distinct("id").orderby("-1d")
 
         # category
         elif request.query_params.get('category'):
@@ -60,8 +55,6 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
 
         # featured
         elif request.query_params.get('featured'):
-            # custom pagination
-            self.pagination_class = SmallResultSetPagination
             category = request.query_params.get('featured')
 
             try:
@@ -77,7 +70,6 @@ class PostViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
         elif request.query_params.get('popular'):
             # custom pagination and serializer
             self.serializer_class = PostSerializerPopular
-            self.pagination_class = SmallResultSetPagination
 
             category = request.query_params.get('popular')
             id = request.query_params.get('id')
